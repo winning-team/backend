@@ -2,7 +2,8 @@ import random
 
 
 class Room():
-    def __init__(self, i, j):
+    def __init__(self, room_number, i, j):
+        self.id = room_number
         self.i = i
         self.j = j
 
@@ -18,39 +19,41 @@ class World():
     def add_n(self, i, j):
         try:
             if i-1 < 0:
-                raise Exception('Negative i value!')
-            self.map[i-1][j] = 1
+                raise Exception('North row does not exist!')
         except:
             self.map.insert(0, [0] * len(self.map[0]))
-            self.map[i][j] = 1
+            i += 1
+        self.map[i-1][j] = 1
         self.total_rooms += 1
 
     def add_s(self, i, j):
         try:
-            self.map[i+1][j] = 1
+            if i + 1 >= len(self.map):
+                raise Exception('South row does not exist!')
         except:
             self.map.append([0] * len(self.map[0]))
-            self.map[i+1][j] = 1
+        self.map[i+1][j] = 1
         self.total_rooms += 1
 
     def add_e(self, i, j):
         try:
-            self.map[i][j+1] = 1
+            if j + 1 >= len(self.map[i]):
+                raise Exception('East column does not exist!')
         except:
             for row in self.map:
                 row.append(0)
-            self.map[i][j+1] = 1
+        self.map[i][j+1] = 1
         self.total_rooms += 1
 
     def add_w(self, i, j):
         try:
             if j-1 < 0:
-                raise Exception('Negative j value!')
-            self.map[i][j-1] = 1
+                raise Exception('West column does not exist!')
         except:
             for row in self.map:
                 row.insert(0, 0)
-            self.map[i][j] = 1
+            j += 1
+        self.map[i][j-1] = 1
         self.total_rooms += 1
 
     def print(self):
