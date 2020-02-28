@@ -1,3 +1,10 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
+import uuid
+
 from queue import Queue
 import random
 import time
@@ -5,13 +12,13 @@ import time
 
 class Room():
     def __init__(self, room_number, i, j):
-        self.id = room_number
-        self.i = i
-        self.j = j
-        self.n_to = None
-        self.s_to = None
-        self.e_to = None
-        self.w_to = None
+        self.id = models.IntegerField(default=room_number)
+        self.i = models.IntegerField(default=i)
+        self.j = models.IntegerField(default=i)
+        self.n_to = models.IntegerField(null=True)
+        self.s_to = models.IntegerField(null=True)
+        self.e_to = models.IntegerField(null=True)
+        self.w_to = models.IntegerField(null=True)
 
     def __repr__(self):
         return f'{self.id}'.rjust(4)
@@ -139,7 +146,7 @@ class World():
 start_time = time.time()
 world = World()
 
-world.add_rooms(100000)
+world.add_rooms(10000)
 world.print_map()
 
 print(len(world))
