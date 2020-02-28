@@ -1,5 +1,6 @@
 from queue import Queue
 import random
+import time
 
 
 class Room():
@@ -28,42 +29,22 @@ class World():
 
     def can_add_room(self, room_id, direction):
         room = self.rooms[room_id]
-        i = room.i
-        j = room.j
-
+        i, j = room.i, room.j
         if direction == 'n':
-            if ((i-1 >= 0) and self.map[i-1][j]) or room.n_to:
-                return False
+            return not (((i-1 >= 0) and self.map[i-1][j]) or room.n_to)
         elif direction == 's':
-            if ((i+1 < len(self.map)) and self.map[i+1][j]) or room.s_to:
-                return False
+            return not (((i+1 < len(self.map)) and self.map[i+1][j]) or room.s_to)
         elif direction == 'e':
-            if ((j+1 < len(self.map[i])) and self.map[i][j+1]) or room.e_to:
-                return False
+            return not (((j+1 < len(self.map[i])) and self.map[i][j+1]) or room.e_to)
         elif direction == 'w':
-            if ((j-1 >= 0) and self.map[i][j-1]) or room.w_to:
-                return False
-        return True
+            return not (((j-1 >= 0) and self.map[i][j-1]) or room.w_to)
 
     def possible_room_directions(self, room_id):
-        directions = []
-        if self.can_add_room(room_id, 'n'):
-            directions.append('n')
-        if self.can_add_room(room_id, 's'):
-            directions.append('s')
-        if self.can_add_room(room_id, 'e'):
-            directions.append('e')
-        if self.can_add_room(room_id, 'w'):
-            directions.append('w')
-        return directions
+        return [dir for dir in ['n', 's', 'e', 'w'] if self.can_add_room(room_id, dir)]
 
     def add_n(self, room_id):
-        i = self.rooms[room_id].i
-        j = self.rooms[room_id].j
-        try:
-            if i-1 < 0:
-                raise Exception('North row does not exist!')
-        except:
+        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+        if i-1 < 0:
             self.map.insert(0, [None] * len(self.map[0]))
             for room in self.rooms:
                 self.rooms[room].i += 1
@@ -74,14 +55,11 @@ class World():
         self.rooms[self.total_rooms] = room
         self.rooms[room_id].n_to = room.id
         room.s_to = room_id
+        return True
 
     def add_s(self, room_id):
-        i = self.rooms[room_id].i
-        j = self.rooms[room_id].j
-        try:
-            if i + 1 >= len(self.map):
-                raise Exception('South row does not exist!')
-        except:
+        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+        if i + 1 >= len(self.map):
             self.map.append([None] * len(self.map[0]))
         self.total_rooms += 1
         room = Room(self.total_rooms, i+1, j)
@@ -89,14 +67,11 @@ class World():
         self.rooms[self.total_rooms] = room
         self.rooms[room_id].s_to = room.id
         room.n_to = room_id
+        return True
 
     def add_e(self, room_id):
-        i = self.rooms[room_id].i
-        j = self.rooms[room_id].j
-        try:
-            if j + 1 >= len(self.map[i]):
-                raise Exception('East column does not exist!')
-        except:
+        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+        if j + 1 >= len(self.map[i]):
             for row in self.map:
                 row.append(None)
         self.total_rooms += 1
@@ -105,14 +80,11 @@ class World():
         self.rooms[self.total_rooms] = room
         self.rooms[room_id].e_to = room.id
         room.w_to = room_id
+        return True
 
     def add_w(self, room_id):
-        i = self.rooms[room_id].i
-        j = self.rooms[room_id].j
-        try:
-            if j-1 < 0:
-                raise Exception('West column does not exist!')
-        except:
+        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+        if j-1 < 0:
             for row in self.map:
                 row.insert(0, None)
             for room in self.rooms:
@@ -124,8 +96,9 @@ class World():
         self.rooms[self.total_rooms] = room
         self.rooms[room_id].w_to = room.id
         room.e_to = room_id
+        return True
 
-    def print(self):
+    def print_map(self):
         for row in self.map:
             print(row)
 
@@ -150,30 +123,29 @@ class World():
                 for room in self.rooms:
                     if len(self.possible_room_directions(room)) > 1:
                         room_id = self.rooms[room].id
-            possible = self.possible_room_directions(room_id).copy()
+            possible = self.possible_room_directions(room_id)
             if len(possible):
                 for i in range(random.randint(1, len(possible))):
                     dir = possible.pop(random.randint(0, len(possible) - 1))
-                    if dir == 'n':
-                        if self.add_n(room_id):
-                            room_queue.enqueue(self.total_rooms)
-                    elif dir == 's':
-                        if self.add_s(room_id):
-                            room_queue.enqueue(self.total_rooms)
-                    elif dir == 'e':
-                        if self.add_e(room_id):
-                            room_queue.enqueue(self.total_rooms)
-                    elif dir == 'w':
-                        if self.add_w(room_id):
-                            room_queue.enqueue(self.total_rooms)
+                    if (
+                        dir == 'n' and self.add_n(room_id) or
+                        dir == 's' and self.add_s(room_id) or
+                        dir == 'e' and self.add_e(room_id) or
+                        dir == 'w' and self.add_w(room_id)
+                    ):
+                        room_queue.enqueue(self.total_rooms)
 
 
+start_time = time.time()
 world = World()
 
-world.add_rooms(500)
+world.add_rooms(1000000)
+# world.print_map()
+# world.print_rooms()
 
-world.print()
 print(len(world))
+end_time = time.time()
+print(f"runtime: {end_time - start_time} seconds")
 # world.print_rooms()
 
 
