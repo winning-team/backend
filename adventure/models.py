@@ -5,6 +5,9 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 import uuid
 
+# class World(models.Model):
+#     self.map = Array
+
 
 class Room(models.Model):
     title = models.CharField(max_length=50, default="DEFAULT TITLE")
@@ -14,6 +17,8 @@ class Room(models.Model):
     s_to = models.IntegerField(default=0)
     e_to = models.IntegerField(default=0)
     w_to = models.IntegerField(default=0)
+    i = models.IntegerField(default=0)
+    j = models.IntegerField(default=0)
 
     def connectRooms(self, destinationRoom, direction):
         destinationRoomID = destinationRoom.id
@@ -40,14 +45,6 @@ class Room(models.Model):
 
     def playerUUIDs(self, currentPlayerID):
         return [p.uuid for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
-
-    def unused_directions(self):
-        directions = []
-        not self.n_to and directions.append('n')
-        not self.s_to and directions.append('s')
-        not self.e_to and directions.append('e')
-        not self.w_to and directions.append('w')
-        return directions
 
 
 class Player(models.Model):

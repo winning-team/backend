@@ -3,7 +3,7 @@ import random
 import time
 
 
-class Room():
+class CreateRoom():
     def __init__(self, room_number, i, j):
         self.id = room_number
         self.i = i
@@ -17,7 +17,7 @@ class Room():
         return f'{self.id}'.rjust(4)
 
 
-class World():
+class CreateWorld():
     def __init__(self):
         starter_room = Room(1, 0, 0)
         self.map = [[starter_room]]
@@ -137,7 +137,7 @@ class World():
 
 
 start_time = time.time()
-world = World()
+world = CreateWorld()
 
 world.add_rooms(100000)
 world.print_map()
