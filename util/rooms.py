@@ -3,11 +3,11 @@ import random
 import time
 
 
-class CreateRoom():
+class Room():
     def __init__(self, room_number, i, j):
         self.id = room_number
-        self.i = i
-        self.j = j
+        self.y = i
+        self.x = j
         self.n_to = None
         self.s_to = None
         self.e_to = None
@@ -17,7 +17,7 @@ class CreateRoom():
         return f'{self.id}'.rjust(4)
 
 
-class CreateWorld():
+class World():
     def __init__(self):
         starter_room = Room(1, 0, 0)
         self.map = [[starter_room]]
@@ -29,11 +29,11 @@ class CreateWorld():
 
     def can_add_room(self, room_id, direction):
         room = self.rooms[room_id]
-        i, j = room.i, room.j
-        if direction == 'n':
-            return not (((i-1 >= 0) and self.map[i-1][j]) or room.n_to)
-        elif direction == 's':
-            return not (((i+1 < len(self.map)) and self.map[i+1][j]) or room.s_to)
+        i, j = room.y, room.x
+        if direction == 's':
+            return not (((i-1 >= 0) and self.map[i-1][j]) or room.s_to)
+        elif direction == 'n':
+            return not (((i+1 < len(self.map)) and self.map[i+1][j]) or room.n_to)
         elif direction == 'e':
             return not (((j+1 < len(self.map[i])) and self.map[i][j+1]) or room.e_to)
         elif direction == 'w':
@@ -42,35 +42,35 @@ class CreateWorld():
     def possible_room_directions(self, room_id):
         return [dir for dir in ['n', 's', 'e', 'w'] if self.can_add_room(room_id, dir)]
 
-    def add_n(self, room_id):
-        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+    def add_s(self, room_id):
+        i, j = self.rooms[room_id].y, self.rooms[room_id].x
         if i-1 < 0:
             self.map.insert(0, [None] * len(self.map[0]))
             for room in self.rooms:
-                self.rooms[room].i += 1
+                self.rooms[room].y += 1
             i += 1
         self.total_rooms += 1
         room = Room(self.total_rooms, i-1, j)
         self.map[i-1][j] = room
         self.rooms[self.total_rooms] = room
-        self.rooms[room_id].n_to = room.id
-        room.s_to = room_id
+        self.rooms[room_id].s_to = room.id
+        room.n_to = room_id
         return True
 
-    def add_s(self, room_id):
-        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+    def add_n(self, room_id):
+        i, j = self.rooms[room_id].y, self.rooms[room_id].x
         if i + 1 >= len(self.map):
             self.map.append([None] * len(self.map[0]))
         self.total_rooms += 1
         room = Room(self.total_rooms, i+1, j)
         self.map[i+1][j] = room
         self.rooms[self.total_rooms] = room
-        self.rooms[room_id].s_to = room.id
-        room.n_to = room_id
+        self.rooms[room_id].n_to = room.id
+        room.s_to = room_id
         return True
 
     def add_e(self, room_id):
-        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+        i, j = self.rooms[room_id].y, self.rooms[room_id].x
         if j + 1 >= len(self.map[i]):
             for row in self.map:
                 row.append(None)
@@ -83,12 +83,12 @@ class CreateWorld():
         return True
 
     def add_w(self, room_id):
-        i, j = self.rooms[room_id].i, self.rooms[room_id].j
+        i, j = self.rooms[room_id].y, self.rooms[room_id].x
         if j-1 < 0:
             for row in self.map:
                 row.insert(0, None)
             for room in self.rooms:
-                self.rooms[room].j += 1
+                self.rooms[room].x += 1
             j += 1
         self.total_rooms += 1
         room = Room(self.total_rooms, i, j-1)
@@ -99,13 +99,16 @@ class CreateWorld():
         return True
 
     def print_map(self):
-        for row in self.map:
-            print(row)
+        for i in range(len(self.map)-1, -1, -1):
+            print(self.map[i])
+
+    def map_to_str(self):
+        pass
 
     def print_rooms(self):
         for room in self.rooms:
             print(
-                f'Room {self.rooms[room].id} ({self.rooms[room].i},{self.rooms[room].j})' +
+                f'Room {self.rooms[room].id} ({self.rooms[room].x},{self.rooms[room].y})' +
                 f' n: {self.rooms[room].n_to}' +
                 f' s: {self.rooms[room].s_to}' +
                 f' e: {self.rooms[room].e_to}' +
@@ -137,10 +140,11 @@ class CreateWorld():
 
 
 start_time = time.time()
-world = CreateWorld()
+world = World()
 
-world.add_rooms(100000)
+world.add_rooms(100)
 world.print_map()
+# world.print_rooms()
 
 print(len(world))
 end_time = time.time()
