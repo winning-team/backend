@@ -5,11 +5,14 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 import uuid
 
+
 class World(models.Model):
     map = models.TextField()
 
+
 class Room(models.Model):
     title = models.CharField(max_length=50, default="DEFAULT TITLE")
+    world = models.IntegerField(default=0)
     description = models.CharField(
         max_length=500, default="DEFAULT DESCRIPTION")
     n_to = models.IntegerField(default=0)
@@ -49,12 +52,15 @@ class Room(models.Model):
 class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     currentRoom = models.IntegerField(default=0)
+    currentWorld = models.IntegerField(default=0)
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
     def initialize(self):
         if self.currentRoom == 0:
             self.currentRoom = Room.objects.first().id
             self.save()
+        if self.currentWorld == 0:
+            self.currentWorld = World.objects.get(id=self.room().world).id
 
     def room(self):
         try:
