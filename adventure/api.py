@@ -74,3 +74,8 @@ def move(request):
 def say(request):
     # IMPLEMENT
     return JsonResponse({'error': "Not yet implemented"}, safe=True, status=500)
+
+@api_view(["GET"])
+def map(request):
+    map = World.objects.get(id=1).map
+    return JsonResponse({'Coordinates': map}, safe=True)

@@ -1,9 +1,10 @@
-from adventure.models import Player, Room
+from adventure.models import Player, Room, World
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 from util.queue import Queue
 import random
 import time
+import json
 
 
 class Command(BaseCommand):
@@ -361,7 +362,20 @@ class Command(BaseCommand):
                 p.currentRoom = rooms[1].id
                 p.save()
 
+            r = world.rooms
+
+            n_to = list(filter(lambda x: r[x].n_to, r))
+            e_to = list(filter(lambda x: r[x].e_to, r))
+            connections = list(
+                map(lambda x: [{'x': r[x].x, 'y': r[x].y}, {'x': r[r[x].n_to].x, 'y': r[r[x].n_to].y}], n_to)) + list(
+                map(lambda x: [{'x': r[x].x, 'y': r[x].y}, {'x': r[r[x].e_to].x, 'y': r[r[x].e_to].y}], e_to))
+            print(connections)
+
             world.print_map()
+
+            world1 = World()
+            world1.map = json.dumps(connections)
+            world1.save()
 
             print(len(world))
             end_time = time.time()

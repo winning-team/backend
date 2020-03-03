@@ -141,7 +141,6 @@ class World():
 
 start_time = time.time()
 world = World()
-
 world.add_rooms(100)
 world.print_map()
 # world.print_rooms()

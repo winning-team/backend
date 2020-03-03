@@ -5,9 +5,8 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 import uuid
 
-# class World(models.Model):
-#     self.map = Array
-
+class World(models.Model):
+    map = models.TextField()
 
 class Room(models.Model):
     title = models.CharField(max_length=50, default="DEFAULT TITLE")
