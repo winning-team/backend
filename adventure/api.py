@@ -9,15 +9,13 @@ from rest_framework.decorators import api_view
 import json
 import pusher
 
-# pusher = pusher.Pusher(
-#     app_id=config('PUSHER_APP_ID'),
-#     key=config('PUSHER_KEY'),
-#     secret=config('PUSHER_SECRET'),
-#     cluster=config('PUSHER_CLUSTER'),
-#     ssl=True
-# )
-
-# pusher.trigger('my-channel', 'my-event', {'message': 'hello world'})
+pusher = pusher.Pusher(
+    app_id=config('PUSHER_APP_ID'),
+    key=config('PUSHER_KEY'),
+    secret=config('PUSHER_SECRET'),
+    cluster=config('PUSHER_CLUSTER'),
+    ssl=True
+)
 
 
 @csrf_exempt
@@ -53,31 +51,44 @@ def move(request):
     elif direction == "w":
         nextRoomID = room.w_to
     if nextRoomID is not None and nextRoomID > 0:
+        currentPlayerUUIDs = room.playerUUIDs(player_id)
+        if len(currentPlayerUUIDs):
+            pusher.trigger(f'room_{room.id}', f'room_{room.id}_event', {
+                           'message': f'[{player.user.username}] entered the room to the {dirs[direction]}.'})
         nextRoom = Room.objects.get(id=nextRoomID)
         player.currentRoom = nextRoomID
         player.save()
         players = nextRoom.playerNames(player_id)
-        currentPlayerUUIDs = room.playerUUIDs(player_id)
+
         nextPlayerUUIDs = nextRoom.playerUUIDs(player_id)
+        if len(nextPlayerUUIDs):
+            pusher.trigger(f'room_{nextRoomID}', f'room_{nextRoomID}_event', {
+                           'message': f'[{player.user.username}] has walked in from the {reverse_dirs[direction]}.'})
         # for p_uuid in currentPlayerUUIDs:
         #     pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} has walked {dirs[direction]}.'})
         # for p_uuid in nextPlayerUUIDs:
         #     pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} has entered from the {reverse_dirs[direction]}.'})
-        return JsonResponse({'name': player.user.username, 'title': nextRoom.title, 'description': nextRoom.description, 'players': players, 'error_msg': "", "x": room.x, "y": room.y}, safe=True)
+        return JsonResponse({'room_id': room.id, 'name': player.user.username, 'title': nextRoom.title, 'description': nextRoom.description, 'players': players, 'error_msg': "", "x": room.x, "y": room.y}, safe=True)
     else:
         players = room.playerNames(player_id)
-        return JsonResponse({'name': player.user.username, 'title': room.title, 'description': room.description, 'players': players, 'error_msg': "You cannot move that way.", "x": room.x, "y": room.y}, safe=True)
+        return JsonResponse({'room_id': room.id, 'name': player.user.username, 'title': room.title, 'description': room.description, 'players': players, 'error_msg': "You cannot move that way.", "x": room.x, "y": room.y}, safe=True)
 
 
 @csrf_exempt
 @api_view(["POST"])
 def say(request):
-    # IMPLEMENT
-    return JsonResponse({'error': "Not yet implemented"}, safe=True, status=500)
+    player = request.user.player
+    room = player.room()
+    data = json.loads(request.body)
+    message = data['message']
+    pusher.trigger(f'room_{room.id}', f'room_{room.id}_event', {
+        'message': f'[{player.user.username}]: {message}'})
+    return JsonResponse({'message': 'Message sent!'}, safe=True, status=200)
 
 
 @api_view(["GET"])
 def map(request):
+
     player = request.user.player
     room = player.room()
     map = World.objects.get(id=player.currentWorld).map

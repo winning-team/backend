@@ -165,7 +165,7 @@ class Command(BaseCommand):
                         room_id = room_queue.dequeue()
                         if not room_id:
                             for room in self.rooms:
-                                if len(self.possible_room_directions(room)) > 1:
+                                if len(self.possible_room_directions(room)) > 2:
                                     room_id = self.rooms[room].id
                         possible = self.possible_room_directions(room_id)
                         if len(possible):
