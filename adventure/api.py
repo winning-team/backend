@@ -6,7 +6,6 @@ from decouple import config
 # from django.contrib.auth.models import User
 from .models import *
 from rest_framework.decorators import api_view
-from ratelimit.decorators import ratelimit
 import json
 import pusher
 
@@ -32,7 +31,6 @@ def initialize(request):
 
 
 # @csrf_exempt
-@ratelimit(rate=None)
 @api_view(["POST"])
 def move(request):
     dirs = {"n": "north", "s": "south", "e": "east", "w": "west"}
