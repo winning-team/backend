@@ -33,110 +33,113 @@ def initialize(request):
 # @csrf_exempt
 @api_view(["POST"])
 def move(request):
-    dirs = {"n": "north", "s": "south", "e": "east", "w": "west"}
-    reverse_dirs = {"n": "south", "s": "north", "e": "west", "w": "east"}
-    player = request.user.player
-    player_id = player.id
-    player_uuid = player.uuid
-    data = json.loads(request.body)
-    moveRooms = False
-    moveInRoom = False
-    prevX = player.x
-    prevY = player.y
-    direction = data['direction']
-    room = player.room()
-    nextRoomID = None
+    try:
+        dirs = {"n": "north", "s": "south", "e": "east", "w": "west"}
+        reverse_dirs = {"n": "south", "s": "north", "e": "west", "w": "east"}
+        player = request.user.player
+        player_id = player.id
+        player_uuid = player.uuid
+        data = json.loads(request.body)
+        moveRooms = False
+        moveInRoom = False
+        prevX = player.x
+        prevY = player.y
+        direction = data['direction']
+        room = player.room()
+        nextRoomID = None
 
-    def movePusher(id, x, y, shouldRemove):
-        print(
-            f'pushing move message to channel: move_{id} event: move_{id}_event')
-        pusher.trigger(f'move_{id}', f'move_{id}_event', {
-            'player': {'username': player.user.username, 'sprite_id': player.user.sprite_id, 'x': x, 'y': y, 'prevX': None if not shouldRemove else prevX, 'prevY': None if not shouldRemove else prevY}})
+        def movePusher(id, x, y, shouldRemove):
+            print(
+                f'pushing move message to channel: move_{id} event: move_{id}_event')
+            pusher.trigger(f'move_{id}', f'move_{id}_event', {
+                'player': {'username': player.user.username, 'sprite_id': player.user.sprite_id, 'x': x, 'y': y, 'prevX': None if not shouldRemove else prevX, 'prevY': None if not shouldRemove else prevY}})
 
-    if direction == "n":
-        if player.x == 1 and player.y == 2:
-            moveRooms = True
-        if player.y != 2:
-            moveInRoom = True
-        nextRoomID = room.n_to
-    elif direction == "s":
-        if player.x == 1 and player.y == 0:
-            moveRooms = True
-        if player.y != 0:
-            moveInRoom = True
-        nextRoomID = room.s_to
-    elif direction == "e":
-        if player.x == 2 and player.y == 1:
-            moveRooms = True
-        if player.x != 2:
-            moveInRoom = True
-        nextRoomID = room.e_to
-    elif direction == "w":
-        if player.x == 0 and player.y == 1:
-            moveRooms = True
-        if player.x != 0:
-            moveInRoom = True
-        nextRoomID = room.w_to
-    if nextRoomID:
-        nextRoom = Room.objects.get(id=nextRoomID)
-    players = room.playerNames(player_id)
-    if moveRooms and nextRoomID is not None and nextRoomID > 0:
-        currentPlayerUUIDs = room.playerUUIDs(player_id)
+        if direction == "n":
+            if player.x == 1 and player.y == 2:
+                moveRooms = True
+            if player.y != 2:
+                moveInRoom = True
+            nextRoomID = room.n_to
+        elif direction == "s":
+            if player.x == 1 and player.y == 0:
+                moveRooms = True
+            if player.y != 0:
+                moveInRoom = True
+            nextRoomID = room.s_to
+        elif direction == "e":
+            if player.x == 2 and player.y == 1:
+                moveRooms = True
+            if player.x != 2:
+                moveInRoom = True
+            nextRoomID = room.e_to
+        elif direction == "w":
+            if player.x == 0 and player.y == 1:
+                moveRooms = True
+            if player.x != 0:
+                moveInRoom = True
+            nextRoomID = room.w_to
+        if nextRoomID:
+            nextRoom = Room.objects.get(id=nextRoomID)
+        players = room.playerNames(player_id)
+        if moveRooms and nextRoomID is not None and nextRoomID > 0:
+            currentPlayerUUIDs = room.playerUUIDs(player_id)
 
-        nextPlayerUUIDs = nextRoom.playerUUIDs(player_id)
-        if len(currentPlayerUUIDs):
-            pusher.trigger(f'room_{room.id}', f'room_{room.id}_event', {
-                           'message': f'[{player.user.username}] exited to the {dirs[direction]}.'})
-            movePusher(room.id, None, None, True)
-        if len(nextPlayerUUIDs):
-            pusher.trigger(f'room_{nextRoomID}', f'room_{nextRoomID}_event', {
-                           'message': f'[{player.user.username}] entered from the {reverse_dirs[direction]}.'})
-            movePusher(nextRoomID, player.x, player.y, False)
-        player.currentRoom = nextRoomID
-        if direction == 'n':
-            player.x = 1
-            player.y = 0
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        elif direction == 'e':
-            player.x = player.x
-            player.x = 0
-            player.y = 1
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        elif direction == 's':
-            player.x = 1
-            player.y = 2
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        elif direction == 'w':
-            player.x = 2
-            player.y = 1
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        players = nextRoom.playerNames(player_id)
-        return JsonResponse({'room_id': nextRoomID, 'name': player.user.username, 'title': nextRoom.title, 'description': nextRoom.description, 'players': players, 'error_msg': "", "x": player.x, "y": player.y, 'sprite_id': player.user.sprite_id, 'n': nextRoom.n_to, 's': nextRoom.s_to, 'e': nextRoom.e_to, 'w': nextRoom.w_to}, safe=True)
-    elif moveInRoom:
-        if direction == 'n':
-            player.y = player.y + 1
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        elif direction == 'e':
-            player.x = player.x + 1
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        elif direction == 's':
-            player.y = player.y - 1
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        elif direction == 'w':
-            player.x = player.x - 1
-            player.save()
-            movePusher(room.id, player.x, player.y, True)
-        print(room.id)
-        return JsonResponse({'room_id': room.id, 'name': player.user.username, 'title': room.title, 'description': room.description, 'players': players, 'error_msg': "", "x": player.x, "y": player.y, 'sprite_id': player.user.sprite_id}, safe=True)
-    else:
-        return JsonResponse({'room_id': room.id, 'name': player.user.username, 'title': room.title, 'description': room.description, 'players': players, 'error_msg': "You cannot move that way.", "x": player.x, "y": player.y, 'sprite_id': player.user.sprite_id}, safe=True)
+            nextPlayerUUIDs = nextRoom.playerUUIDs(player_id)
+            if len(currentPlayerUUIDs):
+                pusher.trigger(f'room_{room.id}', f'room_{room.id}_event', {
+                    'message': f'[{player.user.username}] exited to the {dirs[direction]}.'})
+                movePusher(room.id, None, None, True)
+            if len(nextPlayerUUIDs):
+                pusher.trigger(f'room_{nextRoomID}', f'room_{nextRoomID}_event', {
+                    'message': f'[{player.user.username}] entered from the {reverse_dirs[direction]}.'})
+                movePusher(nextRoomID, player.x, player.y, False)
+            player.currentRoom = nextRoomID
+            if direction == 'n':
+                player.x = 1
+                player.y = 0
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            elif direction == 'e':
+                player.x = player.x
+                player.x = 0
+                player.y = 1
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            elif direction == 's':
+                player.x = 1
+                player.y = 2
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            elif direction == 'w':
+                player.x = 2
+                player.y = 1
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            players = nextRoom.playerNames(player_id)
+            return JsonResponse({'room_id': nextRoomID, 'name': player.user.username, 'title': nextRoom.title, 'description': nextRoom.description, 'players': players, 'error_msg': "", "x": player.x, "y": player.y, 'sprite_id': player.user.sprite_id, 'n': nextRoom.n_to, 's': nextRoom.s_to, 'e': nextRoom.e_to, 'w': nextRoom.w_to}, safe=True)
+        elif moveInRoom:
+            if direction == 'n':
+                player.y = player.y + 1
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            elif direction == 'e':
+                player.x = player.x + 1
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            elif direction == 's':
+                player.y = player.y - 1
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            elif direction == 'w':
+                player.x = player.x - 1
+                player.save()
+                movePusher(room.id, player.x, player.y, True)
+            print(room.id)
+            return JsonResponse({'room_id': room.id, 'name': player.user.username, 'title': room.title, 'description': room.description, 'players': players, 'error_msg': "", "x": player.x, "y": player.y, 'sprite_id': player.user.sprite_id}, safe=True)
+        else:
+            return JsonResponse({'room_id': room.id, 'name': player.user.username, 'title': room.title, 'description': room.description, 'players': players, 'error_msg': "You cannot move that way.", "x": player.x, "y": player.y, 'sprite_id': player.user.sprite_id}, safe=True)
+    except Exception as e:
+        print(e)
 
 
 @csrf_exempt
