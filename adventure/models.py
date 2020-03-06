@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
+from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
@@ -43,24 +44,29 @@ class Room(models.Model):
             self.save()
 
     def playerNames(self, currentPlayerID):
-        return [p.user.username for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
+        return [{'username': p.user.username, 'x': p.x, 'y': p.y, 'sprite_id': p.user.sprite_id} for p in Player.objects.filter(currentRoom=self.id)]
+        # return [{'username': p.user.username, 'x': p.x, 'y': p.y, 'sprite_id': p.user.sprite_id} for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
 
     def playerUUIDs(self, currentPlayerID):
         return [p.uuid for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
 
 
 class Player(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     currentRoom = models.IntegerField(default=0)
     currentWorld = models.IntegerField(default=0)
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    x = models.IntegerField(default=1)
+    y = models.IntegerField(default=1)
+    gameCharacterId = models.IntegerField(default=1)
 
     def initialize(self):
         if self.currentRoom == 0:
             self.currentRoom = Room.objects.first().id
             self.save()
         if self.currentWorld == 0:
-            self.currentWorld = World.objects.get(id=self.room().world).id
+            self.currentWorld = Room.objects.first().world
 
     def room(self):
         try:
@@ -70,13 +76,13 @@ class Player(models.Model):
             return self.room()
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
         Token.objects.create(user=instance)
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def save_user_player(sender, instance, **kwargs):
     instance.player.save()
